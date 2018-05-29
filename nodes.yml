@@ -1,4 +1,4 @@
-defaults:
+fallback:
   environment: production
   implies:
   - base

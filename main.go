@@ -26,8 +26,8 @@ type ResolutionResult struct {
 
 // nodes/*.yaml
 type NodeSpec struct {
-	Defaults Node
-	Nodes map[string]Node
+	Fallback Node
+	Nodes    map[string]Node
 }
 
 type Node struct {
@@ -67,7 +67,7 @@ func resolveClasses(dst *ResolutionResult, implications[]string, confPrefix stri
 	}
 }
 
-func classify(node string, confPrefix string) (*Classification, error) {
+func classify(nodeName string, confPrefix string) (*Classification, error) {
 
 	nodesData, err := ioutil.ReadFile(confPrefix + "/nodes.yml")
 	if err != nil {
@@ -78,20 +78,20 @@ func classify(node string, confPrefix string) (*Classification, error) {
 	yaml.Unmarshal(nodesData, &nodes)
 
 
-	defaultNode := nodes.Defaults
-	nodeSpec, found := nodes.Nodes[node]
+	fallback := nodes.Fallback
+	node, found := nodes.Nodes[nodeName]
 	if !found {
-		nodeSpec = defaultNode
+		node = fallback
 	}
 
 	result := ResolutionResult{}
-	resolveClasses(&result, nodeSpec.Implies, confPrefix, map[string]interface{}{})
-	classification := Classification{Classes: result.Classes, Data: result.Data, Environment: nodeSpec.Environment}
+	resolveClasses(&result, node.Implies, confPrefix, map[string]interface{}{})
+	classification := Classification{Classes: result.Classes, Data: result.Data, Environment: node.Environment}
 	if classification.Environment == "" {
-		classification.Environment = defaultNode.Environment
+		classification.Environment = fallback.Environment
 	}
 
-	ips, _ := net.LookupIP(node)
+	ips, _ := net.LookupIP(nodeName)
 	stringIps := make([]string, len(ips))
 	for i, ip := range ips {
 		stringIps[i] = ip.String()
