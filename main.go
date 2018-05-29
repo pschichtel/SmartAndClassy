@@ -12,7 +12,7 @@ import (
 type ClassTable map[string]map[string]interface{}
 type HieraData map[string]interface{}
 
-// roles/*.yaml
+// components/*.yml
 type Component struct {
 	Classes ClassTable
 	Data HieraData
@@ -24,7 +24,7 @@ type ResolutionResult struct {
 	Data    HieraData
 }
 
-// nodes/*.yaml
+// nodes.yml
 type NodeSpec struct {
 	Fallback Node
 	Nodes    map[string]Node
@@ -41,14 +41,13 @@ type Classification struct {
 	Environment string
 }
 
-func loadComponent(name string, configPrefix string) (*Component, error) {
+func loadComponent(dst *Component, name string, configPrefix string) error {
 	data, err := ioutil.ReadFile(configPrefix + "/components/" + name + ".yml")
 	if err != nil {
-		return nil, err
+		return err
 	}
-	component := Component{}
-	yaml.Unmarshal(data, &component)
-	return &component, nil
+	yaml.Unmarshal(data, dst)
+	return nil
 }
 
 func resolveClasses(dst *ResolutionResult, implications[]string, confPrefix string, seen map[string]interface{}) {
@@ -57,7 +56,8 @@ func resolveClasses(dst *ResolutionResult, implications[]string, confPrefix stri
 		_, seenBefore := seen[implication]
 		if !seenBefore {
 			seen[implication] = true
-			component, err := loadComponent(implication, confPrefix)
+			component := Component{}
+			err := loadComponent(&component, implication, confPrefix)
 			if err == nil {
 				mergo.Merge(&dst.Classes, component.Classes)
 				mergo.Merge(&dst.Data, component.Data)
