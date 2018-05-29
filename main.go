@@ -4,46 +4,35 @@ import (
 	"fmt"
 	"os"
 	"gopkg.in/yaml.v2"
+	"github.com/imdario/mergo"
 	"net"
+	"io/ioutil"
 )
 
 type ClassTable map[string]map[string]interface{}
+type HieraData map[string]interface{}
 
 // roles/*.yaml
-type Role struct {
-	Name string
-	Imports []string
+type Component struct {
 	Classes ClassTable
+	Data HieraData
+	Implies []string
 }
 
-// bundles/*.yaml
-type Bundle struct {
-	Name string
+type ResolutionResult struct {
 	Classes ClassTable
-}
-
-// groups/*.yaml
-type Group struct {
-	Name string
-	Parents []string
-	Classes ClassTable
-	Environment string
+	Data    HieraData
 }
 
 // nodes/*.yaml
-type Node struct {
-	Name string
-	Groups []string
-	Roles []string
-	Imports []string
-	Classes ClassTable
-	Environment string
+type NodeSpec struct {
+	Defaults Node
+	Nodes map[string]Node
 }
 
-// implications/*.yaml
-type Implication struct {
-	If string
-	Then ClassTable
+type Node struct {
+	Environment string
+	Implies []string
 }
 
 type Classification struct {
@@ -51,8 +40,51 @@ type Classification struct {
 	Environment string
 }
 
-func classify(node string) (Classification, error) {
-	classification := Classification{Classes: map[string]map[string]interface{} {"cubyte::welcome::hostname": {"hostname": node}}, Environment: "production"}
+func loadComponent(name string, configPrefix string) (*Component, error) {
+	data, err := ioutil.ReadFile(configPrefix + "/components/" + name + ".yml")
+	if err != nil {
+		return nil, err
+	}
+	component := Component{}
+	yaml.Unmarshal(data, &component)
+	return &component, nil
+}
+
+func resolveClasses(dst *ResolutionResult, implications[]string, confPrefix string, seen map[string]interface{}) {
+	for i := range implications {
+		implication := implications[i]
+		_, seenBefore := seen[implication]
+		if !seenBefore {
+			seen[implication] = true
+			component, err := loadComponent(implication, confPrefix)
+			if err == nil {
+				mergo.Merge(&dst.Classes, component.Classes)
+				mergo.Merge(&dst.Data, component.Data)
+				resolveClasses(dst, component.Implies, confPrefix, seen)
+			}
+		}
+	}
+}
+
+func classify(node string, confPrefix string) (*Classification, error) {
+
+	nodesData, err := ioutil.ReadFile(confPrefix + "/nodes.yml")
+	if err != nil {
+		return nil, err
+	}
+
+	nodes := NodeSpec{}
+	yaml.Unmarshal(nodesData, &nodes)
+
+
+	nodeSpec, found := nodes.Nodes[node]
+	if !found {
+		nodeSpec = nodes.Defaults
+	}
+
+	result := ResolutionResult{}
+	resolveClasses(&result, nodeSpec.Implies, confPrefix, map[string]interface{}{})
+	classification := Classification{Classes: result.Classes, Environment: nodeSpec.Environment}
 
 	ips, _ := net.LookupIP(node)
 	stringIps := make([]string, len(ips))
@@ -62,7 +94,7 @@ func classify(node string) (Classification, error) {
 
 	classification.Classes["cubyte::network"] = map[string]interface{}{"ips": stringIps}
 
-	return classification, nil
+	return &classification, nil
 }
 
 func main() {
@@ -73,7 +105,7 @@ func main() {
 		return
 	}
 
-	class, _ := classify(os.Args[1])
+	class, _ := classify(os.Args[1], ".")
 	response, _ := yaml.Marshal(class)
 
 	fmt.Printf("---\n%s\n", string(response))

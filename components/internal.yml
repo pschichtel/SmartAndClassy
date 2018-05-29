@@ -1,0 +1,8 @@
+classes:
+  apt:
+    repos:
+      backports:
+          host: ftp.de.debian.org
+data:
+implies:
+- base

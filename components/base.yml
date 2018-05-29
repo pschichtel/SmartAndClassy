@@ -1,0 +1,9 @@
+classes:
+  apt:
+    repos:
+      main:
+          host: ftp.de.debian.org
+      updates:
+          host: ftp.de.debian.org
+      security:
+          host: ftp.de.debian.org

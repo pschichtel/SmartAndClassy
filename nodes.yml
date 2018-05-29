@@ -1,0 +1,7 @@
+defaults:
+  implies:
+  - base
+nodes:
+  test-node:
+    implies:
+    - internal
