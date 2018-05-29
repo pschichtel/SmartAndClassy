@@ -7,6 +7,7 @@ import (
 	"github.com/imdario/mergo"
 	"net"
 	"io/ioutil"
+	"path/filepath"
 )
 
 type ClassTable map[string]map[string]interface{}
@@ -41,8 +42,8 @@ type Classification struct {
 	Environment string
 }
 
-func loadComponent(dst *Component, name string, configPrefix string) error {
-	data, err := ioutil.ReadFile(configPrefix + "/components/" + name + ".yml")
+func loadComponent(dst *Component, name string, confPrefix string) error {
+	data, err := ioutil.ReadFile(filepath.Join(confPrefix, "components", name + ".yml"))
 	if err != nil {
 		return err
 	}
@@ -76,8 +77,7 @@ func resolveNodeName(nodeName string) {
 }
 
 func classify(dst *Classification, nodeName string, confPrefix string) error {
-
-	nodesData, err := ioutil.ReadFile(confPrefix + "/nodes.yml")
+	nodesData, err := ioutil.ReadFile(filepath.Join(confPrefix, "nodes.yml"))
 	if err != nil {
 		return err
 	}
