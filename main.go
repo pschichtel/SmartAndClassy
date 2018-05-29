@@ -67,11 +67,19 @@ func resolveClasses(dst *ResolutionResult, implications[]string, confPrefix stri
 	}
 }
 
-func classify(nodeName string, confPrefix string) (*Classification, error) {
+func resolveNodeName(nodeName string) {
+	ips, _ := net.LookupIP(nodeName)
+	stringIps := make([]string, len(ips))
+	for i, ip := range ips {
+		stringIps[i] = ip.String()
+	}
+}
+
+func classify(dst *Classification, nodeName string, confPrefix string) error {
 
 	nodesData, err := ioutil.ReadFile(confPrefix + "/nodes.yml")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	nodes := NodeSpec{}
@@ -86,20 +94,14 @@ func classify(nodeName string, confPrefix string) (*Classification, error) {
 
 	result := ResolutionResult{}
 	resolveClasses(&result, node.Implies, confPrefix, map[string]interface{}{})
-	classification := Classification{Classes: result.Classes, Data: result.Data, Environment: node.Environment}
-	if classification.Environment == "" {
-		classification.Environment = fallback.Environment
+	dst.Classes = result.Classes
+	dst.Data = result.Data
+	dst.Environment = node.Environment
+	if dst.Environment == "" {
+		dst.Environment = fallback.Environment
 	}
 
-	ips, _ := net.LookupIP(nodeName)
-	stringIps := make([]string, len(ips))
-	for i, ip := range ips {
-		stringIps[i] = ip.String()
-	}
-
-	classification.Classes["cubyte::network"] = map[string]interface{}{"ips": stringIps}
-
-	return &classification, nil
+	return nil
 }
 
 func main() {
@@ -110,8 +112,9 @@ func main() {
 		return
 	}
 
-	class, _ := classify(os.Args[1], ".")
-	response, _ := yaml.Marshal(class)
+	classification := Classification{}
+	_ = classify(&classification, os.Args[1], ".")
+	response, _ := yaml.Marshal(classification)
 
 	fmt.Printf("---\n%s\n", string(response))
 }
