@@ -7,3 +7,6 @@ classes:
           host: ftp.de.debian.org
       security:
           host: ftp.de.debian.org
+data:
+  bla::bla::blub:
+    value: "and stuff"

@@ -1,4 +1,5 @@
 defaults:
+  environment: production
   implies:
   - base
 nodes:

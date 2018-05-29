@@ -37,6 +37,7 @@ type Node struct {
 
 type Classification struct {
 	Classes ClassTable
+	Data HieraData
 	Environment string
 }
 
@@ -77,14 +78,18 @@ func classify(node string, confPrefix string) (*Classification, error) {
 	yaml.Unmarshal(nodesData, &nodes)
 
 
+	defaultNode := nodes.Defaults
 	nodeSpec, found := nodes.Nodes[node]
 	if !found {
-		nodeSpec = nodes.Defaults
+		nodeSpec = defaultNode
 	}
 
 	result := ResolutionResult{}
 	resolveClasses(&result, nodeSpec.Implies, confPrefix, map[string]interface{}{})
-	classification := Classification{Classes: result.Classes, Environment: nodeSpec.Environment}
+	classification := Classification{Classes: result.Classes, Data: result.Data, Environment: nodeSpec.Environment}
+	if classification.Environment == "" {
+		classification.Environment = defaultNode.Environment
+	}
 
 	ips, _ := net.LookupIP(node)
 	stringIps := make([]string, len(ips))
