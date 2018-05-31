@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"github.com/akamensky/argparse"
+	"strings"
 )
 
 type ClassTable map[string]map[string]interface{}
@@ -44,7 +45,8 @@ type Classification struct {
 }
 
 func loadComponent(dst *Component, name string, confPrefix string) error {
-	data, err := ioutil.ReadFile(filepath.Join(confPrefix, "components", name + ".yml"))
+	nameComponents := strings.Split(strings.ToLower(name) + ".yml", "/")
+	data, err := ioutil.ReadFile(filepath.Join(confPrefix, "components", filepath.Join(nameComponents...)))
 	if err != nil {
 		return err
 	}
@@ -54,7 +56,7 @@ func loadComponent(dst *Component, name string, confPrefix string) error {
 
 func resolveClasses(dst *ResolutionResult, implications []string, confPrefix string, seen map[string]interface{}) {
 	for i := range implications {
-		implication := implications[i]
+		implication := strings.ToLower(implications[i])
 		_, seenBefore := seen[implication]
 		if !seenBefore {
 			seen[implication] = true
