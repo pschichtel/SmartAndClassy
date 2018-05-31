@@ -8,6 +8,7 @@ import (
 	"net"
 	"io/ioutil"
 	"path/filepath"
+	"github.com/akamensky/argparse"
 )
 
 type ClassTable map[string]map[string]interface{}
@@ -51,7 +52,7 @@ func loadComponent(dst *Component, name string, confPrefix string) error {
 	return nil
 }
 
-func resolveClasses(dst *ResolutionResult, implications[]string, confPrefix string, seen map[string]interface{}) {
+func resolveClasses(dst *ResolutionResult, implications []string, confPrefix string, seen map[string]interface{}) {
 	for i := range implications {
 		implication := implications[i]
 		_, seenBefore := seen[implication]
@@ -106,14 +107,19 @@ func classify(dst *Classification, nodeName string, confPrefix string) error {
 
 func main() {
 
-	if len(os.Args) < 1 {
-		fmt.Fprintf(os.Stderr, "usage: %s <node>\n", os.Args[0])
+	parser := argparse.NewParser("classyfy", "A Puppet external node classifier (ENC)")
+
+	confPrefix := parser.String("c", "conf-prefix", &argparse.Options{Default:".", Required:false, Help:"The base path for configuration"})
+	nodeName := parser.String("n", "node", &argparse.Options{Required:true, Help:"The hostname of the node to classify"})
+
+	err := parser.Parse(os.Args)
+	if err != nil {
+		fmt.Print(parser.Usage(err))
 		os.Exit(1)
-		return
 	}
 
 	classification := Classification{}
-	_ = classify(&classification, os.Args[1], ".")
+	_ = classify(&classification, *nodeName, *confPrefix)
 	response, _ := yaml.Marshal(classification)
 
 	fmt.Printf("---\n%s\n", string(response))
