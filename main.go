@@ -113,6 +113,7 @@ func main() {
 
 	confPrefix := parser.String("c", "conf-prefix", &argparse.Options{Default:".", Required:false, Help:"The base path for configuration"})
 	nodeName := parser.String("n", "node", &argparse.Options{Required:true, Help:"The hostname of the node to classify"})
+	dataOnly := parser.Flag("d", "data", &argparse.Options{Help:"Only output the data"})
 
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -122,7 +123,14 @@ func main() {
 
 	classification := Classification{}
 	_ = classify(&classification, *nodeName, *confPrefix)
-	response, _ := yaml.Marshal(classification)
 
+	var data interface{}
+	if *dataOnly {
+		data = classification.Data
+	} else {
+		data = classification
+	}
+
+	response, _ := yaml.Marshal(data)
 	fmt.Printf("---\n%s\n", string(response))
 }
