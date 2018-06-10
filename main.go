@@ -81,13 +81,13 @@ func resolveNodeName(nodeName string) {
 
 func classify(dst *Classification, nodeName string, confPrefix string) error {
 	nodesData, err := ioutil.ReadFile(filepath.Join(confPrefix, "nodes.yml"))
-	if err != nil {
+	nodes := NodeSpec{}
+
+	if err == nil {
+		yaml.Unmarshal(nodesData, &nodes)
+	} else {
 		return err
 	}
-
-	nodes := NodeSpec{}
-	yaml.Unmarshal(nodesData, &nodes)
-
 
 	fallback := nodes.Fallback
 	node, found := nodes.Nodes[nodeName]
@@ -95,7 +95,7 @@ func classify(dst *Classification, nodeName string, confPrefix string) error {
 		node = fallback
 	}
 
-	result := ResolutionResult{}
+	result := ResolutionResult{Data:HieraData{}, Classes:ClassTable{}}
 	resolveClasses(&result, node.Implies, confPrefix, map[string]interface{}{})
 	dst.Classes = result.Classes
 	dst.Data = result.Data
@@ -122,7 +122,12 @@ func main() {
 	}
 
 	classification := Classification{}
-	_ = classify(&classification, *nodeName, *confPrefix)
+	err = classify(&classification, *nodeName, *confPrefix)
+	if err != nil {
+		fmt.Println("Failed to classify the given node!")
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
 	var data interface{}
 	if *dataOnly {
