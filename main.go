@@ -55,11 +55,18 @@ func loadComponent(dst *Component, name string, confPrefix string) error {
 	if err != nil {
 		return err
 	}
+	if dst.Classes == nil {
+		dst.Classes = ClassTable{}
+	}
 	// for ease of configuration allow to define the classes with without a value, we'll fix them to empty objects.
 	for i := range dst.Classes {
 		if dst.Classes[i] == nil {
 			dst.Classes[i] = ClassTableEntry{}
 		}
+	}
+
+	if dst.Data == nil {
+		dst.Data = HieraData{}
 	}
 	return nil
 }
