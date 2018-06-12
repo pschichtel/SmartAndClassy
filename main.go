@@ -74,11 +74,11 @@ func resolveClasses(dst *ResolutionResult, implications []string, confPrefix str
 			if err == nil {
 				err = mergo.Merge(&dst.Classes, component.Classes, mergo.WithOverride)
 				if err != nil {
-					panic("# Failed to merge structs!")
+					fmt.Printf("# Failed to merge classes!\n")
 				}
 				err = mergo.Merge(&dst.Data, component.Data, mergo.WithOverride)
 				if err != nil {
-					panic("# Failed to merge structs!")
+					fmt.Printf("# Failed to merge data!\n")
 				}
 				resolveClasses(dst, component.Implies, confPrefix, seen)
 			} else {
