@@ -12,7 +12,8 @@ import (
 	"strings"
 )
 
-type ClassTable map[string]map[string]interface{}
+type ClassTableEntry map[string]interface{}
+type ClassTable map[string]ClassTableEntry
 type HieraData map[string]interface{}
 
 // components/*.yml
@@ -50,7 +51,15 @@ func loadComponent(dst *Component, name string, confPrefix string) error {
 	if err != nil {
 		return err
 	}
-	yaml.Unmarshal(data, dst)
+	err = yaml.Unmarshal(data, dst)
+	if err != nil {
+		return err
+	}
+	for i := range dst.Classes {
+		if dst.Classes[i] == nil {
+			dst.Classes[i] = ClassTableEntry{}
+		}
+	}
 	return nil
 }
 
@@ -63,9 +72,17 @@ func resolveClasses(dst *ResolutionResult, implications []string, confPrefix str
 			component := Component{}
 			err := loadComponent(&component, implication, confPrefix)
 			if err == nil {
-				mergo.Merge(&dst.Classes, component.Classes)
-				mergo.Merge(&dst.Data, component.Data)
+				err = mergo.Merge(&dst.Classes, component.Classes, mergo.WithOverride)
+				if err != nil {
+					panic("# Failed to merge structs!")
+				}
+				err = mergo.Merge(&dst.Data, component.Data, mergo.WithOverride)
+				if err != nil {
+					panic("# Failed to merge structs!")
+				}
 				resolveClasses(dst, component.Implies, confPrefix, seen)
+			} else {
+				fmt.Printf("# Error loading component %s: %s\n", implication, err)
 			}
 		}
 	}
@@ -84,7 +101,10 @@ func classify(dst *Classification, nodeName string, confPrefix string) error {
 	nodes := NodeSpec{}
 
 	if err == nil {
-		yaml.Unmarshal(nodesData, &nodes)
+		err = yaml.Unmarshal(nodesData, &nodes)
+		if err != nil {
+			return err
+		}
 	} else {
 		return err
 	}
@@ -92,6 +112,7 @@ func classify(dst *Classification, nodeName string, confPrefix string) error {
 	fallback := nodes.Fallback
 	node, found := nodes.Nodes[nodeName]
 	if !found {
+		fmt.Println("# Node is not known, falling back!")
 		node = fallback
 	}
 
