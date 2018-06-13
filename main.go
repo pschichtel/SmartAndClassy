@@ -128,7 +128,6 @@ func classify(dst *Classification, nodeName string, confPrefix string, strictMod
 
 	fallback := nodes.Fallback
 	node, found := nodes.Nodes[nodeName]
-	fmt.Printf("%s, %t\n", node, found)
 	if !found {
 		if strictMode {
 			panic("Node not found in strict mode!")
