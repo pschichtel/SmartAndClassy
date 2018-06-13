@@ -14,18 +14,20 @@ import (
 
 type ClassTableEntry map[string]interface{}
 type ClassTable map[string]ClassTableEntry
-type HieraData map[string]interface{}
+type DataTable map[string]interface{}
 
 // components/*.yml
 type Component struct {
-	Classes ClassTable
-	Data HieraData
-	Implies []string
+	Classes    ClassTable
+	Data       DataTable
+	Parameters DataTable
+	Implies    []string
 }
 
 type ResolutionResult struct {
-	Classes ClassTable
-	Data    HieraData
+	Classes    ClassTable
+	Data       DataTable
+	Parameters DataTable
 }
 
 // nodes.yml
@@ -36,17 +38,18 @@ type NodeSpec struct {
 
 type Node struct {
 	Environment string
-	Implies []string
+	Implies     []string
 }
 
 type Classification struct {
-	Classes ClassTable
-	Data HieraData
+	Classes     ClassTable
+	Data        DataTable
+	Parameters  DataTable
 	Environment string
 }
 
 func loadComponent(dst *Component, name string, confPrefix string) error {
-	nameComponents := strings.Split(strings.ToLower(name) + ".yml", "/")
+	nameComponents := strings.Split(strings.ToLower(name)+".yml", "/")
 	data, err := ioutil.ReadFile(filepath.Join(confPrefix, "components", filepath.Join(nameComponents...)))
 	if err != nil {
 		return err
@@ -66,8 +69,13 @@ func loadComponent(dst *Component, name string, confPrefix string) error {
 	}
 
 	if dst.Data == nil {
-		dst.Data = HieraData{}
+		dst.Data = DataTable{}
 	}
+
+	if dst.Parameters == nil {
+		dst.Parameters = DataTable{}
+	}
+
 	return nil
 }
 
@@ -93,6 +101,13 @@ func resolveClasses(dst *ResolutionResult, implications []string, confPrefix str
 						panic("Failed to merge data in strict mode!")
 					}
 					fmt.Printf("# Failed to merge data!\n")
+				}
+				err = mergo.Merge(&dst.Parameters, component.Parameters, mergo.WithOverride)
+				if err != nil {
+					if strictMode {
+						panic("Failed to merge parameters in strict mode!")
+					}
+					fmt.Printf("# Failed to merge parameters!\n")
 				}
 				resolveClasses(dst, component.Implies, confPrefix, seen, strictMode)
 			} else {
@@ -136,10 +151,11 @@ func classify(dst *Classification, nodeName string, confPrefix string, strictMod
 		node = fallback
 	}
 
-	result := ResolutionResult{Data:HieraData{}, Classes:ClassTable{}}
+	result := ResolutionResult{Data: DataTable{}, Classes: ClassTable{}}
 	resolveClasses(&result, node.Implies, confPrefix, map[string]interface{}{}, strictMode)
 	dst.Classes = result.Classes
 	dst.Data = result.Data
+	dst.Parameters = result.Parameters
 	dst.Environment = node.Environment
 	if dst.Environment == "" {
 		dst.Environment = fallback.Environment
@@ -152,10 +168,10 @@ func main() {
 
 	parser := argparse.NewParser("classyfy", "A Puppet external node classifier (ENC)")
 
-	confPrefix := parser.String("c", "conf-prefix", &argparse.Options{Default:".", Required:false, Help:"The base path for configuration."})
-	nodeName   := parser.String("n", "node", &argparse.Options{Required:true, Help:"The hostname of the node to classify."})
-	dataOnly   := parser.Flag("d", "data", &argparse.Options{Help:"Only output the data."})
-	strictMode := parser.Flag("s", "strict", &argparse.Options{Help:"Fail on a inconsistent model."})
+	confPrefix := parser.String("c", "conf-prefix", &argparse.Options{Default: ".", Required: false, Help: "The base path for configuration."})
+	nodeName := parser.String("n", "node", &argparse.Options{Required: true, Help: "The hostname of the node to classify."})
+	dataOnly := parser.Flag("d", "data", &argparse.Options{Help: "Only output the data."})
+	strictMode := parser.Flag("s", "strict", &argparse.Options{Help: "Fail on a inconsistent model."})
 
 	err := parser.Parse(os.Args)
 	if err != nil {

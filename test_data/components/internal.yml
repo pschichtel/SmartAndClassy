@@ -4,5 +4,7 @@ classes:
       backports:
           host: ftp.de.debian.org
 data:
+parameters:
+  such: parameter
 implies:
 - base
