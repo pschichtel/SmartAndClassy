@@ -71,7 +71,7 @@ func loadComponent(dst *Component, name string, confPrefix string) error {
 	return nil
 }
 
-func resolveClasses(dst *ResolutionResult, implications []string, confPrefix string, seen map[string]interface{}) {
+func resolveClasses(dst *ResolutionResult, implications []string, confPrefix string, seen map[string]interface{}, strictMode bool) {
 	for i := range implications {
 		implication := strings.ToLower(implications[i])
 		_, seenBefore := seen[implication]
@@ -82,14 +82,23 @@ func resolveClasses(dst *ResolutionResult, implications []string, confPrefix str
 			if err == nil {
 				err = mergo.Merge(&dst.Classes, component.Classes, mergo.WithOverride)
 				if err != nil {
+					if strictMode {
+						panic("Failed to merge classes in strict mode!")
+					}
 					fmt.Printf("# Failed to merge classes!\n")
 				}
 				err = mergo.Merge(&dst.Data, component.Data, mergo.WithOverride)
 				if err != nil {
+					if strictMode {
+						panic("Failed to merge data in strict mode!")
+					}
 					fmt.Printf("# Failed to merge data!\n")
 				}
-				resolveClasses(dst, component.Implies, confPrefix, seen)
+				resolveClasses(dst, component.Implies, confPrefix, seen, strictMode)
 			} else {
+				if strictMode {
+					panic("Failed to load a component in strict mode!")
+				}
 				fmt.Printf("# Error loading component %s: %s\n", implication, err)
 			}
 		}
@@ -104,7 +113,7 @@ func resolveNodeName(nodeName string) {
 	}
 }
 
-func classify(dst *Classification, nodeName string, confPrefix string) error {
+func classify(dst *Classification, nodeName string, confPrefix string, strictMode bool) error {
 	nodesData, err := ioutil.ReadFile(filepath.Join(confPrefix, "nodes.yml"))
 	nodes := NodeSpec{}
 
@@ -119,13 +128,17 @@ func classify(dst *Classification, nodeName string, confPrefix string) error {
 
 	fallback := nodes.Fallback
 	node, found := nodes.Nodes[nodeName]
+	fmt.Printf("%s, %t\n", node, found)
 	if !found {
+		if strictMode {
+			panic("Node not found in strict mode!")
+		}
 		fmt.Println("# Node is not known, falling back!")
 		node = fallback
 	}
 
 	result := ResolutionResult{Data:HieraData{}, Classes:ClassTable{}}
-	resolveClasses(&result, node.Implies, confPrefix, map[string]interface{}{})
+	resolveClasses(&result, node.Implies, confPrefix, map[string]interface{}{}, strictMode)
 	dst.Classes = result.Classes
 	dst.Data = result.Data
 	dst.Environment = node.Environment
@@ -140,9 +153,10 @@ func main() {
 
 	parser := argparse.NewParser("classyfy", "A Puppet external node classifier (ENC)")
 
-	confPrefix := parser.String("c", "conf-prefix", &argparse.Options{Default:".", Required:false, Help:"The base path for configuration"})
-	nodeName := parser.String("n", "node", &argparse.Options{Required:true, Help:"The hostname of the node to classify"})
-	dataOnly := parser.Flag("d", "data", &argparse.Options{Help:"Only output the data"})
+	confPrefix := parser.String("c", "conf-prefix", &argparse.Options{Default:".", Required:false, Help:"The base path for configuration."})
+	nodeName   := parser.String("n", "node", &argparse.Options{Required:true, Help:"The hostname of the node to classify."})
+	dataOnly   := parser.Flag("d", "data", &argparse.Options{Help:"Only output the data."})
+	strictMode := parser.Flag("s", "strict", &argparse.Options{Help:"Fail on a inconsistent model."})
 
 	err := parser.Parse(os.Args)
 	if err != nil {
@@ -151,7 +165,7 @@ func main() {
 	}
 
 	classification := Classification{}
-	err = classify(&classification, *nodeName, *confPrefix)
+	err = classify(&classification, *nodeName, *confPrefix, *strictMode)
 	if err != nil {
 		fmt.Println("Failed to classify the given node!")
 		fmt.Println(err)

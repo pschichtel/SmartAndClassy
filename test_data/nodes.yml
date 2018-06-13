@@ -6,3 +6,6 @@ nodes:
   test-node:
     implies:
     - internal
+  broken-node:
+    implies:
+    - __missing_component__
