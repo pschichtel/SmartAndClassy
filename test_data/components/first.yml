@@ -1,0 +1,5 @@
+classes:
+  a:
+    b: 1
+implies:
+- second

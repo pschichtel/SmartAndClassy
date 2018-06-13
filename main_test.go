@@ -59,3 +59,16 @@ func TestUnknownNodeFallbackClassification(t *testing.T) {
 	assert.Nil(t, err, "No error on missing node in non-strict mode")
 	assert.Equal(t, expectedClassification, classification, "Should fallback correctly")
 }
+
+func TestResolutionOrder(t *testing.T) {
+	expectedClassification := Classification{
+		Classes: ClassTable{"a": ClassTableEntry{"b": 1}},
+		Data: DataTable{},
+		Parameters: DataTable{},
+		Environment: "production",
+	}
+	classification := Classification{}
+	err := classify(&classification, "prio-node", "test_data", true)
+	assert.Nil(t, err, "Should not return an error.")
+	assert.Equal(t, expectedClassification, classification, "Should traverse the implications in post-order to prioritize values higher up the tree.")
+}

@@ -9,3 +9,6 @@ nodes:
   broken-node:
     implies:
     - __missing_component__
+  prio-node:
+    implies:
+    - first
