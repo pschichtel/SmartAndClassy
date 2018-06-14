@@ -86,6 +86,7 @@ func resolveClasses(dst *ResolutionResult, implications []string, confPrefix str
 		if !seenBefore {
 			seen[implication] = true
 			component := Component{}
+			fmt.Printf("# component: %s\n", implication)
 			err := loadComponent(&component, implication, confPrefix)
 			if err == nil {
 				// first merge the implications
@@ -94,24 +95,24 @@ func resolveClasses(dst *ResolutionResult, implications []string, confPrefix str
 				// then merge the current component (post-order) to prioritize explicitly configured values higher up the tree
 				err = mergo.Merge(&dst.Classes, component.Classes, mergo.WithOverride)
 				if err != nil {
+					fmt.Printf("# Failed to merge classes!\n")
 					if strictMode {
 						panic("Failed to merge classes in strict mode!")
 					}
-					fmt.Printf("# Failed to merge classes!\n")
 				}
 				err = mergo.Merge(&dst.Data, component.Data, mergo.WithOverride)
 				if err != nil {
+					fmt.Printf("# Failed to merge data!\n")
 					if strictMode {
 						panic("Failed to merge data in strict mode!")
 					}
-					fmt.Printf("# Failed to merge data!\n")
 				}
 				err = mergo.Merge(&dst.Parameters, component.Parameters, mergo.WithOverride)
 				if err != nil {
+					fmt.Printf("# Failed to merge parameters!\n")
 					if strictMode {
 						panic("Failed to merge parameters in strict mode!")
 					}
-					fmt.Printf("# Failed to merge parameters!\n")
 				}
 			} else {
 				if strictMode {
