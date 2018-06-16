@@ -7,7 +7,7 @@ import (
 
 const NodeSpecFile = "test_data/nodes.yml"
 const BrokenNodeSpecFile = "__BROKEN__nodes.yml__"
-const ComponentsBase = "test_data/components"
+const ComponentsBase = "test_data/%s"
 const BrokenComponentsBase = "__BROKEN__components_base__"
 
 func TestStrictModeUnknownHost(t *testing.T) {

@@ -16,7 +16,7 @@ type ClassTableEntry map[string]interface{}
 type ClassTable map[string]ClassTableEntry
 type DataTable map[string]interface{}
 
-// components/*.yml
+// production/*.yml
 type Component struct {
 	Classes    ClassTable
 	Data       DataTable
@@ -80,7 +80,7 @@ func loadComponent(name string, componentsBase string) (*Component, error) {
 	return dst, nil
 }
 
-func resolveClasses(dst *ResolutionResult, implications []string, componentsBase string, seen map[string]interface{}, strictMode bool) {
+func resolveClasses(dst *ResolutionResult, implications []string, componentsBase string, strictMode bool, seen map[string]interface{}) {
 	for i := range implications {
 		implication := strings.ToLower(implications[i])
 		_, seenBefore := seen[implication]
@@ -90,7 +90,7 @@ func resolveClasses(dst *ResolutionResult, implications []string, componentsBase
 			component, err := loadComponent(implication, componentsBase)
 			if err == nil {
 				// first merge the implications
-				resolveClasses(dst, component.Implies, componentsBase, seen, strictMode)
+				resolveClasses(dst, component.Implies, componentsBase, strictMode, seen)
 
 				// then merge the current component (post-order) to prioritize explicitly configured values higher up the tree
 				err = mergo.Merge(&dst.Classes, component.Classes, mergo.WithOverride)
@@ -155,15 +155,20 @@ func classify(dst *Classification, nodeName string, nodesFile string, components
 		node = fallback
 	}
 
+	if node.Environment == "" {
+		node.Environment = fallback.Environment
+	}
+
+	if strings.Contains(componentsBase, "%s") {
+		componentsBase = fmt.Sprintf(componentsBase, node.Environment)
+	}
+
 	result := ResolutionResult{Data: DataTable{}, Classes: ClassTable{}}
-	resolveClasses(&result, node.Implies, componentsBase, map[string]interface{}{}, strictMode)
+	resolveClasses(&result, node.Implies, componentsBase, strictMode, map[string]interface{}{})
 	dst.Classes = result.Classes
 	dst.Data = result.Data
 	dst.Parameters = result.Parameters
 	dst.Environment = node.Environment
-	if dst.Environment == "" {
-		dst.Environment = fallback.Environment
-	}
 
 	return nil
 }
@@ -172,7 +177,7 @@ func main() {
 
 	parser := argparse.NewParser("classyfy", "A Puppet external node classifier (ENC)")
 
-	componentsBase := parser.String("c", "components-base", &argparse.Options{Default: "components", Required: false, Help: "The base path for configuration components."})
+	componentsBase := parser.String("c", "production-base", &argparse.Options{Default: "production", Required: false, Help: "The base path for configuration production."})
 	nodesFile := parser.String("N", "nodes-file", &argparse.Options{Default: "nodes.yml", Required: false, Help: "The path to the node specification file."})
 	nodeName := parser.String("n", "node", &argparse.Options{Required: true, Help: "The hostname of the node to classify."})
 	dataOnly := parser.Flag("d", "data", &argparse.Options{Help: "Only output the data."})
