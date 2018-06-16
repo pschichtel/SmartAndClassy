@@ -48,9 +48,9 @@ type Classification struct {
 	Environment string
 }
 
-func loadComponent(dst *Component, name string, confPrefix string) error {
+func loadComponent(dst *Component, name string, componentsBase string) error {
 	nameComponents := strings.Split(strings.ToLower(name)+".yml", "/")
-	data, err := ioutil.ReadFile(filepath.Join(confPrefix, "components", filepath.Join(nameComponents...)))
+	data, err := ioutil.ReadFile(filepath.Join(componentsBase, filepath.Join(nameComponents...)))
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func loadComponent(dst *Component, name string, confPrefix string) error {
 	return nil
 }
 
-func resolveClasses(dst *ResolutionResult, implications []string, confPrefix string, seen map[string]interface{}, strictMode bool) {
+func resolveClasses(dst *ResolutionResult, implications []string, componentsBase string, seen map[string]interface{}, strictMode bool) {
 	for i := range implications {
 		implication := strings.ToLower(implications[i])
 		_, seenBefore := seen[implication]
@@ -87,10 +87,10 @@ func resolveClasses(dst *ResolutionResult, implications []string, confPrefix str
 			seen[implication] = true
 			component := Component{}
 			fmt.Printf("# component: %s\n", implication)
-			err := loadComponent(&component, implication, confPrefix)
+			err := loadComponent(&component, implication, componentsBase)
 			if err == nil {
 				// first merge the implications
-				resolveClasses(dst, component.Implies, confPrefix, seen, strictMode)
+				resolveClasses(dst, component.Implies, componentsBase, seen, strictMode)
 
 				// then merge the current component (post-order) to prioritize explicitly configured values higher up the tree
 				err = mergo.Merge(&dst.Classes, component.Classes, mergo.WithOverride)
@@ -132,8 +132,8 @@ func resolveNodeName(nodeName string) {
 	}
 }
 
-func classify(dst *Classification, nodeName string, confPrefix string, strictMode bool) error {
-	nodesData, err := ioutil.ReadFile(filepath.Join(confPrefix, "nodes.yml"))
+func classify(dst *Classification, nodeName string, nodesFile string, componentsBase string, strictMode bool) error {
+	nodesData, err := ioutil.ReadFile(nodesFile)
 	nodes := NodeSpec{}
 
 	if err == nil {
@@ -156,7 +156,7 @@ func classify(dst *Classification, nodeName string, confPrefix string, strictMod
 	}
 
 	result := ResolutionResult{Data: DataTable{}, Classes: ClassTable{}}
-	resolveClasses(&result, node.Implies, confPrefix, map[string]interface{}{}, strictMode)
+	resolveClasses(&result, node.Implies, componentsBase, map[string]interface{}{}, strictMode)
 	dst.Classes = result.Classes
 	dst.Data = result.Data
 	dst.Parameters = result.Parameters
@@ -172,7 +172,8 @@ func main() {
 
 	parser := argparse.NewParser("classyfy", "A Puppet external node classifier (ENC)")
 
-	confPrefix := parser.String("c", "conf-prefix", &argparse.Options{Default: ".", Required: false, Help: "The base path for configuration."})
+	componentsBase := parser.String("c", "components-base", &argparse.Options{Default: "components", Required: false, Help: "The base path for configuration components."})
+	nodesFile := parser.String("N", "nodes-file", &argparse.Options{Default: "nodes.yml", Required: false, Help: "The path to the node specification file."})
 	nodeName := parser.String("n", "node", &argparse.Options{Required: true, Help: "The hostname of the node to classify."})
 	dataOnly := parser.Flag("d", "data", &argparse.Options{Help: "Only output the data."})
 	strictMode := parser.Flag("s", "strict", &argparse.Options{Help: "Fail on a inconsistent model."})
@@ -184,7 +185,7 @@ func main() {
 	}
 
 	classification := Classification{}
-	err = classify(&classification, *nodeName, *confPrefix, *strictMode)
+	err = classify(&classification, *nodeName, *nodesFile, *componentsBase, *strictMode)
 	if err != nil {
 		fmt.Println("Failed to classify the given node!")
 		fmt.Println(err)

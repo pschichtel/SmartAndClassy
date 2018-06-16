@@ -5,23 +5,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+const NodeSpecFile = "test_data/nodes.yml"
+const BrokenNodeSpecFile = "__BROKEN__nodes.yml__"
+const ComponentsBase = "test_data/components"
+const BrokenComponentsBase = "__BROKEN__components_base__"
+
 func TestStrictModeUnknownHost(t *testing.T) {
 	assert.Panics(t, func() {
 		classification := Classification{}
-		classify(&classification, "unknown", "test_data", true)
+		classify(&classification, "unknown", NodeSpecFile, ComponentsBase, true)
 	}, "Should panic on unknown modes in strict mode")
 }
 
 func TestStrictModeUnknownComponent(t *testing.T) {
 	assert.Panics(t, func() {
 		classification := Classification{}
-		classify(&classification, "broken-node", "test_data", true)
+		classify(&classification, "broken-node", NodeSpecFile, ComponentsBase, true)
 	}, "Should panic on unknown component in strict mode")
 }
 
 func TestPrefixWithoutNodeSpec(t *testing.T) {
 	classification := Classification{}
-	err := classify(&classification, "unknown", "__missing_test_data__", false)
+	err := classify(&classification, "unknown", BrokenNodeSpecFile, BrokenComponentsBase, false)
 	assert.NotNil(t, err, "Should return an error if no nodes.yml was found")
 }
 
@@ -38,7 +43,7 @@ func TestKnownNodeClassification(t *testing.T) {
 		Environment: "production",
 	}
 	classification := Classification{}
-	err := classify(&classification, "test-node", "test_data", false)
+	err := classify(&classification, "test-node", NodeSpecFile, ComponentsBase, false)
 	assert.Nil(t, err, "Should not return an error for successful classifications")
 	assert.Equal(t, expectedClassification, classification, "Should classify correctly")
 }
@@ -55,7 +60,7 @@ func TestUnknownNodeFallbackClassification(t *testing.T) {
 		Environment: "production",
 	}
 	classification := Classification{}
-	err := classify(&classification, "__unknown_node__", "test_data", false)
+	err := classify(&classification, "__unknown_node__", NodeSpecFile, ComponentsBase, false)
 	assert.Nil(t, err, "No error on missing node in non-strict mode")
 	assert.Equal(t, expectedClassification, classification, "Should fallback correctly")
 }
@@ -68,7 +73,7 @@ func TestResolutionOrder(t *testing.T) {
 		Environment: "production",
 	}
 	classification := Classification{}
-	err := classify(&classification, "prio-node", "test_data", true)
+	err := classify(&classification, "prio-node", NodeSpecFile, ComponentsBase, true)
 	assert.Nil(t, err, "Should not return an error.")
 	assert.Equal(t, expectedClassification, classification, "Should traverse the implications in post-order to prioritize values higher up the tree.")
 }
