@@ -48,15 +48,16 @@ type Classification struct {
 	Environment string
 }
 
-func loadComponent(dst *Component, name string, componentsBase string) error {
+func loadComponent(name string, componentsBase string) (*Component, error) {
 	nameComponents := strings.Split(strings.ToLower(name)+".yml", "/")
 	data, err := ioutil.ReadFile(filepath.Join(componentsBase, filepath.Join(nameComponents...)))
 	if err != nil {
-		return err
+		return nil, err
 	}
+	dst := &Component{}
 	err = yaml.Unmarshal(data, dst)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if dst.Classes == nil {
 		dst.Classes = ClassTable{}
@@ -76,7 +77,7 @@ func loadComponent(dst *Component, name string, componentsBase string) error {
 		dst.Parameters = DataTable{}
 	}
 
-	return nil
+	return dst, nil
 }
 
 func resolveClasses(dst *ResolutionResult, implications []string, componentsBase string, seen map[string]interface{}, strictMode bool) {
@@ -85,9 +86,8 @@ func resolveClasses(dst *ResolutionResult, implications []string, componentsBase
 		_, seenBefore := seen[implication]
 		if !seenBefore {
 			seen[implication] = true
-			component := Component{}
 			fmt.Printf("# component: %s\n", implication)
-			err := loadComponent(&component, implication, componentsBase)
+			component, err := loadComponent(implication, componentsBase)
 			if err == nil {
 				// first merge the implications
 				resolveClasses(dst, component.Implies, componentsBase, seen, strictMode)
