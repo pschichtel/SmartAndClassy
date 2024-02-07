@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"gopkg.in/yaml.v2"
-	"github.com/imdario/mergo"
+	"dario.cat/mergo"
 	"net"
 	"io/ioutil"
 	"path/filepath"
