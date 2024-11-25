@@ -5,7 +5,7 @@ COPY . /go/src/SmartAndClassy
 RUN go get .
 RUN go build
 
-FROM debian:stretch
+FROM debian:bookworm
 RUN mkdir /app
 COPY --from=build /go/src/SmartAndClassy/SmartAndClassy /app/classyfy
 WORKDIR /app
