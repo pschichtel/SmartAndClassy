@@ -3,7 +3,7 @@ module github.com/pschichtel/smartandclassy
 go 1.21.6
 
 require (
-	dario.cat/mergo v1.0.0
+	dario.cat/mergo v1.0.1
 	github.com/akamensky/argparse v1.4.0
 	github.com/stretchr/testify v1.8.4
 	gopkg.in/yaml.v2 v2.4.0
