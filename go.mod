@@ -5,7 +5,7 @@ go 1.21.6
 require (
 	dario.cat/mergo v1.0.0
 	github.com/akamensky/argparse v1.4.0
-	github.com/stretchr/testify v1.8.4
+	github.com/stretchr/testify v1.10.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
