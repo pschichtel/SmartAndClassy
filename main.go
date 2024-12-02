@@ -1,14 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"gopkg.in/yaml.v2"
 	"dario.cat/mergo"
-	"net"
-	"io/ioutil"
-	"path/filepath"
+	"fmt"
 	"github.com/akamensky/argparse"
+	"gopkg.in/yaml.v3"
+	"net"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -50,7 +49,7 @@ type Classification struct {
 
 func loadComponent(name string, componentsBase string) (*Component, error) {
 	nameComponents := strings.Split(strings.ToLower(name)+".yml", "/")
-	data, err := ioutil.ReadFile(filepath.Join(componentsBase, filepath.Join(nameComponents...)))
+	data, err := os.ReadFile(filepath.Join(componentsBase, filepath.Join(nameComponents...)))
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +132,7 @@ func resolveNodeName(nodeName string) {
 }
 
 func classify(dst *Classification, nodeName string, nodesFile string, componentsBase string, strictMode bool) error {
-	nodesData, err := ioutil.ReadFile(nodesFile)
+	nodesData, err := os.ReadFile(nodesFile)
 	nodes := NodeSpec{}
 
 	if err == nil {

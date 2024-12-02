@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 const NodeSpecFile = "test_data/nodes.yml"
@@ -13,14 +13,14 @@ const BrokenComponentsBase = "__BROKEN__components_base__"
 func TestStrictModeUnknownHost(t *testing.T) {
 	assert.Panics(t, func() {
 		classification := Classification{}
-		classify(&classification, "unknown", NodeSpecFile, ComponentsBase, true)
+		_ = classify(&classification, "unknown", NodeSpecFile, ComponentsBase, true)
 	}, "Should panic on unknown modes in strict mode")
 }
 
 func TestStrictModeUnknownComponent(t *testing.T) {
 	assert.Panics(t, func() {
 		classification := Classification{}
-		classify(&classification, "broken-node", NodeSpecFile, ComponentsBase, true)
+		_ = classify(&classification, "broken-node", NodeSpecFile, ComponentsBase, true)
 	}, "Should panic on unknown component in strict mode")
 }
 
@@ -34,12 +34,12 @@ func TestKnownNodeClassification(t *testing.T) {
 	expectedClassification := Classification{
 		Classes: ClassTable{"apt": ClassTableEntry{"repos": map[interface{}]interface{}{
 			"backports": map[interface{}]interface{}{"host": "ftp.de.debian.org"},
-			"main": map[interface{}]interface{}{"host": "ftp.de.debian.org"},
-			"security": map[interface{}]interface{}{"host": "ftp.de.debian.org"},
-			"updates": map[interface{}]interface{}{"host": "ftp.de.debian.org"}},
+			"main":      map[interface{}]interface{}{"host": "ftp.de.debian.org"},
+			"security":  map[interface{}]interface{}{"host": "ftp.de.debian.org"},
+			"updates":   map[interface{}]interface{}{"host": "ftp.de.debian.org"}},
 		}},
-		Data: DataTable{"bla::bla::blub": map[interface{}]interface{}{"value": "and stuff"}},
-		Parameters: DataTable{"such": "parameter"},
+		Data:        DataTable{"bla::bla::blub": map[interface{}]interface{}{"value": "and stuff"}},
+		Parameters:  DataTable{"such": "parameter"},
 		Environment: "production",
 	}
 	classification := Classification{}
@@ -51,12 +51,12 @@ func TestKnownNodeClassification(t *testing.T) {
 func TestUnknownNodeFallbackClassification(t *testing.T) {
 	expectedClassification := Classification{
 		Classes: ClassTable{"apt": ClassTableEntry{"repos": map[interface{}]interface{}{
-			"main": map[interface{}]interface{}{"host": "ftp.de.debian.org"},
+			"main":     map[interface{}]interface{}{"host": "ftp.de.debian.org"},
 			"security": map[interface{}]interface{}{"host": "ftp.de.debian.org"},
-			"updates": map[interface{}]interface{}{"host": "ftp.de.debian.org"}},
+			"updates":  map[interface{}]interface{}{"host": "ftp.de.debian.org"}},
 		}},
-		Data: DataTable{"bla::bla::blub": map[interface{}]interface{}{"value": "and stuff"}},
-		Parameters: DataTable{},
+		Data:        DataTable{"bla::bla::blub": map[interface{}]interface{}{"value": "and stuff"}},
+		Parameters:  DataTable{},
 		Environment: "production",
 	}
 	classification := Classification{}
@@ -67,9 +67,9 @@ func TestUnknownNodeFallbackClassification(t *testing.T) {
 
 func TestResolutionOrder(t *testing.T) {
 	expectedClassification := Classification{
-		Classes: ClassTable{"a": ClassTableEntry{"b": 1}},
-		Data: DataTable{},
-		Parameters: DataTable{},
+		Classes:     ClassTable{"a": ClassTableEntry{"b": 1}},
+		Data:        DataTable{},
+		Parameters:  DataTable{},
 		Environment: "production",
 	}
 	classification := Classification{}
